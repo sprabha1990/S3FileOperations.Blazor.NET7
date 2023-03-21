@@ -3,6 +3,7 @@
 @inject HttpClient _httpClient;
 @using Microsoft.AspNetCore.Components.Forms;
 @using System.Net.Http.Headers;
+@inject IConfiguration Configuration
 
 <table class="table table-striped mt-5">
      <thead class="table-dark">
@@ -22,7 +23,7 @@
                 <th scope="col">@file.Key</th>
                 <th scope="col">@file.BucketName</th>
                 <th scope="col">@file.Size</th>
-                <th scope="col"><a href="https://localhost:7097/api/S3/download?Key=@file.Key" class="link-success">Download</a><i class="bi bi-download ms-3 d-inline-flex align-Items-center text-danger"></i></th>
+                <th scope="col"><a href="@Configuration["apiBaseAddress"]api/S3/download?Key=@file.Key" class="link-success">Download</a><i class="bi bi-download ms-3 d-inline-flex align-Items-center text-danger"></i></th>
             </tr>
         }
     </tbody>
@@ -50,7 +51,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        FilesInS3 = await _httpClient.GetFromJsonAsync<List<Files>>("https://localhost:7097/api/S3/") ?? new();
+        FilesInS3 = await _httpClient.GetFromJsonAsync<List<Files>>($"{Configuration["apiBaseAddress"]}api/S3/") ?? new();
     }
 
     public async Task UploadFileAsync()
@@ -66,8 +67,8 @@
             name: "\"file\"",
             fileName: _currentFile.Name);
 
-        var response = await _httpClient.PostAsync("https://localhost:7097/api/S3/upload", content);
+        var response = await _httpClient.PostAsync($"{Configuration["apiBaseAddress"]}api/S3/upload", content);
         response.EnsureSuccessStatusCode();
-        FilesInS3 = await _httpClient.GetFromJsonAsync<List<Files>>("https://localhost:7097/api/S3/") ?? new();
+        FilesInS3 = await _httpClient.GetFromJsonAsync<List<Files>>($"{Configuration["apiBaseAddress"]}api/S3/") ?? new();
     }
 }
