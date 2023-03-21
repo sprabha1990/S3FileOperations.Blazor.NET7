@@ -10,3 +10,5 @@ dotnet run --project Api\S3FileOperations.WebApi.csproj
 dotnet run --project WebApp\S3FileOperations.Blazor.csproj
 
 ```
+
+> More information about this project is available in my [blog post](https://dev.to/sprabha1990/series/22262)
