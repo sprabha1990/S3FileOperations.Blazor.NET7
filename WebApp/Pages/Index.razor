@@ -1,0 +1,73 @@
+﻿@page "/"
+@using S3FileOperations.Blazor.Entity;
+@inject HttpClient _httpClient;
+@using Microsoft.AspNetCore.Components.Forms;
+@using System.Net.Http.Headers;
+
+<table class="table table-striped mt-5">
+     <thead class="table-dark">
+     <tr>
+          <th scope="col">ETAG</th>
+          <th scope="col">FileName</th>
+          <th scope="col">BucketName</th>
+          <th scope="col">Size (In Bytes)</th>
+          <th scope="col"></th>
+    </tr>
+  </thead>
+    <tbody class="table-light">
+        @foreach(var file in FilesInS3)
+        {
+            <tr>
+                <th scope="col">@file.ETag</th>
+                <th scope="col">@file.Key</th>
+                <th scope="col">@file.BucketName</th>
+                <th scope="col">@file.Size</th>
+                <th scope="col"><a href="https://localhost:7097/api/S3/download?Key=@file.Key" class="link-success">Download</a><i class="bi bi-download ms-3 d-inline-flex align-Items-center text-danger"></i></th>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="card d-inline-flex flex-row bd-highlight ms-2 mt-2 w-50 p-3">
+    <div class="card-body p-2 bd-highlight">
+        <InputFile OnChange="(e) => _currentFile = e.File" class="btn-light mb-2 w-100" />
+        @if (_currentFile != null)
+        {
+            <div class="d-grid gap-3 ">
+                <div class="p-2 bg-light border mt-1"><p>Name: @_currentFile.Name</p></div>
+                <div class="p-2 bg-light border">Size in bytes: @_currentFile.Size</div>
+                <div class="p-2 bg-light border">Last modified date: @_currentFile.LastModified.ToString()</div>
+                <div class="p-2 bg-light border">Content type (not always supplied by the browser): @_currentFile.ContentType</div>
+            </div>
+        }
+        <button type="button" class="btn btn-primary mt-3" @onclick="UploadFileAsync">Upload File <i class="bi bi-upload ms-2 d-inline-flex"></i></button>
+    </div>
+</div>
+
+@code {
+    public List<Files> FilesInS3 { get; set; } = new();
+    public IBrowserFile? _currentFile = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        FilesInS3 = await _httpClient.GetFromJsonAsync<List<Files>>("https://localhost:7097/api/S3/") ?? new();
+    }
+
+    public async Task UploadFileAsync()
+    {
+        if (_currentFile == null)
+            return;
+
+        var content = new MultipartFormDataContent();
+        var fileContent = new StreamContent(_currentFile.OpenReadStream(1024000));
+
+        content.Add(
+            content: fileContent,
+            name: "\"file\"",
+            fileName: _currentFile.Name);
+
+        var response = await _httpClient.PostAsync("https://localhost:7097/api/S3/upload", content);
+        response.EnsureSuccessStatusCode();
+        FilesInS3 = await _httpClient.GetFromJsonAsync<List<Files>>("https://localhost:7097/api/S3/") ?? new();
+    }
+}
